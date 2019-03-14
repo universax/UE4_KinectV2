@@ -1,0 +1,31 @@
+//
+//  Singleton.h
+//  PhDanceMasterApp
+//
+//  Created by YOHEI KAJIWARA on 2014/12/24.
+//
+//
+
+#pragma once
+
+#include <stdio.h>
+
+template <typename T>
+class Singleton{
+public:
+    // 唯一のアクセス経路
+    static inline T& GetInstance()
+    {
+        static T instance;  // 唯一のインスタンス
+        return instance;
+    }
+    
+protected:
+    Singleton(){}
+    virtual ~Singleton() {}
+    
+private:
+    // 生成やコピーを禁止する
+    Singleton(const Singleton& rhs);
+    Singleton& operator=(const Singleton& rhs);
+};
