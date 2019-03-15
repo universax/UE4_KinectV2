@@ -31,6 +31,7 @@ public:
 	bool update();
 	HRESULT close();
 	inline bool getIsFrameNew() { return isFrameNew; }
+	void getColorBur(vector<BYTE> &output);
 	void getDepthBuf(vector<UINT16> &output);
 	void getInfraredBuf(vector<UINT16> &output);
 	IBody* getBodies(int index);

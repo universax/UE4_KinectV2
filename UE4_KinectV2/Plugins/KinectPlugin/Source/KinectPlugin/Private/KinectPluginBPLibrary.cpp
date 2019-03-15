@@ -168,16 +168,33 @@ TArray<FVector> UKinectPluginBPLibrary::GetDepthPoints() {
 //Texture生成周りの処理
 void UKinectPluginBPLibrary::InitDynamicTextureResorces()
 {
-	CameraImageTextureSize.X = 512;
-	CameraImageTextureSize.Y = 424;
+	// IR
+	CameraImageTextureSize_IR.X = 512;
+	CameraImageTextureSize_IR.Y = 424;
+	InitDynamicTextureResorces(CameraImageTextureSize_IR, CameraImageTexture_IR, CameraImageData_IR, CameraImageUpdateTextureRegion_IR);
+
+	// Color
+	CameraImageTextureSize_Color.X = 1920;
+	CameraImageTextureSize_Color.Y = 1080;
+	InitDynamicTextureResorces(CameraImageTextureSize_Color, CameraImageTexture_Color , CameraImageData_Color, CameraImageUpdateTextureRegion_Color);
+
+	// Depth
+	CameraImageTextureSize_Depth.X = 512;
+	CameraImageTextureSize_Depth.Y = 424;
+	InitDynamicTextureResorces(CameraImageTextureSize_Depth, CameraImageTexture_Depth, CameraImageData_Depth, CameraImageUpdateTextureRegion_Depth);
+
+
+
+}
+
+void UKinectPluginBPLibrary::InitDynamicTextureResorces(FVector2D & ImgTextureSize, UTexture2D * CameraImageTexture, TArray<FColor>& CameraImageData, FUpdateTextureRegion2D * CameraImageUpdateTextureRegion)
+{
 #undef UpdateResource	//winbase.hのマクロ定義と衝突するので回避
-	CameraImageTexture = UTexture2D::CreateTransient(CameraImageTextureSize.X, CameraImageTextureSize.Y, PF_B8G8R8A8);
+	CameraImageTexture = UTexture2D::CreateTransient(ImgTextureSize.X, ImgTextureSize.Y, PF_B8G8R8A8);
 	CameraImageTexture->UpdateResource();
-	CameraImageData.Init(FColor(0, 0, 0, 255), CameraImageTextureSize.X * CameraImageTextureSize.Y);
+	CameraImageData.Init(FColor(0, 0, 0, 255), ImgTextureSize.X * ImgTextureSize.Y);
 
-	CameraImageUpdateTextureRegion = new FUpdateTextureRegion2D(0, 0, 0, 0, CameraImageTextureSize.X, CameraImageTextureSize.Y);
-
-	UE_LOG(Kinect, Warning, TEXT("Init DynamicTexture"));
+	CameraImageUpdateTextureRegion = new FUpdateTextureRegion2D(0, 0, 0, 0, ImgTextureSize.X, ImgTextureSize.Y);
 }
 
 void UKinectPluginBPLibrary::UpdateTextureRegions(UTexture2D * Texture, int32 MipIndex, uint32 NumRegions, FUpdateTextureRegion2D * Regions, uint32 SrcPitch, uint32 SrcBpp, uint8 * SrcData, bool bFreeData)
@@ -236,7 +253,7 @@ void UKinectPluginBPLibrary::UpdateTextureRegions(UTexture2D * Texture, int32 Mi
 	}
 }
 
-void UKinectPluginBPLibrary::UpdateCameraImageTexture()
+void UKinectPluginBPLibrary::UpdateCameraTexture()
 {
 	//初回だけテクスチャ周りをイニシャライズしておく
 	if (!DidDynamicTextureInit)
@@ -245,24 +262,59 @@ void UKinectPluginBPLibrary::UpdateCameraImageTexture()
 		DidDynamicTextureInit = true;
 	}
 
+	//Get kinect Camera Images
+	// IR
+	vector<UINT16> buf_IR;
+	kinect.getInfraredBuf(buf_IR);
+	for (int i = 0; i < buf_IR.size(); i++)
+	{
+		BYTE b = 255 * buf_IR[i] * 30 / (255 * 255);
+
+		CameraImageData_IR[i].R = b;	//x
+		CameraImageData_IR[i].G = b;	//y
+		CameraImageData_IR[i].B = b;	//z
+	}
+	UpdateCameraTexture(CameraImageTextureSize_IR, CameraImageTexture_IR, CameraImageData_IR, CameraImageUpdateTextureRegion_IR);
+
+	// Color
+	vector<BYTE> buf_Color;
+	kinect.getColorBur(buf_Color);
+	int j = 0;
+	for (int i = 0; i < buf_Color.size(); i+=4)
+	{
+		BYTE r = buf_Color[i];
+		BYTE g = buf_Color[i+1];
+		BYTE b = buf_Color[i+2];
+
+		CameraImageData_Color[j].R = r;	//x
+		CameraImageData_Color[j].G = g;	//y
+		CameraImageData_Color[j].B = b;	//z
+
+		j++;
+	}
+	UpdateCameraTexture(CameraImageTextureSize_Color, CameraImageTexture_Color, CameraImageData_Color, CameraImageUpdateTextureRegion_Color);
+
+	// Depth
+	vector<UINT16> buf_Depth;
+	kinect.getDepthBuf(buf_Depth);
+	for (int i = 0; i < buf_Depth.size(); i++)
+	{
+		BYTE b = 255 * buf_Depth[i] * 30 / (255 * 255);
+
+		CameraImageData_Depth[i].R = b;	//x
+		CameraImageData_Depth[i].G = b;	//y
+		CameraImageData_Depth[i].B = b;	//z
+	}
+	UpdateCameraTexture(CameraImageTextureSize_Depth, CameraImageTexture_Depth, CameraImageData_Depth, CameraImageUpdateTextureRegion_Depth);
+}
+
+void UKinectPluginBPLibrary::UpdateCameraTexture(FVector2D &CameraImageTextureSize, UTexture2D* CameraImageTexture, TArray<FColor> &CameraImageData, FUpdateTextureRegion2D* CameraImageUpdateTextureRegion)
+{
 	//Nullチェック
 	if (!CameraImageTexture)
 	{
 		//UE_LOG(PCLPlugin, Error, TEXT("ERROR: PointCloudTexture is null"));
 		return;
-	}
-
-	//Get kinect Camera Images
-	vector<UINT16> buf;
-	kinect.getInfraredBuf(buf);
-
-	for (int i = 0; i < buf.size(); i++)
-	{
-		BYTE b = 255 * buf[i] * 30 / (255 * 255);
-
-		CameraImageData[i].R = b;	//x
-		CameraImageData[i].G = b;	//y
-		CameraImageData[i].B = b;	//z
 	}
 
 	UpdateTextureRegions(
@@ -277,12 +329,32 @@ void UKinectPluginBPLibrary::UpdateCameraImageTexture()
 	);
 }
 
-UTexture2D * UKinectPluginBPLibrary::GetCameraImageTexture()
+UTexture2D * UKinectPluginBPLibrary::GetCameraImageTexture_IR()
 {
-	if (!CameraImageTexture)
+	if (!CameraImageTexture_IR)
 	{
-		UE_LOG(Kinect, Warning, TEXT("ERROR: DynamicTexture is null"));
+		UE_LOG(Kinect, Warning, TEXT("ERROR: IR DynamicTexture is null"));
 	}
 
-	return CameraImageTexture;
+	return CameraImageTexture_IR;
+}
+
+UTexture2D * UKinectPluginBPLibrary::GetCameraImageTexture_Color()
+{
+	if (!CameraImageTexture_Color)
+	{
+		UE_LOG(Kinect, Warning, TEXT("ERROR: Color DynamicTexture is null"));
+	}
+
+	return CameraImageTexture_Color;
+}
+
+UTexture2D * UKinectPluginBPLibrary::GetCameraImageTexture_Depth()
+{
+	if (!CameraImageTexture_Depth)
+	{
+		UE_LOG(Kinect, Warning, TEXT("ERROR: Depth DynamicTexture is null"));
+	}
+
+	return CameraImageTexture_Depth;
 }

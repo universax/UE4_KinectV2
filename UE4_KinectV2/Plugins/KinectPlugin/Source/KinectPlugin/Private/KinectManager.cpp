@@ -214,12 +214,19 @@ HRESULT KinectManager::close() {
 }
 
 //--------------------------------------------------------------------------------------------
+void KinectManager::getColorBur(vector<BYTE> &output)
+{
+	output.clear();
+	copy(colorBuffer.begin(), colorBuffer.end(), back_inserter(output));
+}
+
 void KinectManager::getDepthBuf(vector<UINT16> &output)
 {
 	output.clear();
-
 	copy(depthBuffer.begin(), depthBuffer.end(), back_inserter(output));
 }
+
+
 
 void KinectManager::getInfraredBuf(vector<UINT16>& output)
 {

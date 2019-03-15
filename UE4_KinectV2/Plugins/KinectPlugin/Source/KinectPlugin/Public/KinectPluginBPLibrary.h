@@ -88,17 +88,23 @@ class UKinectPluginBPLibrary : public UBlueprintFunctionLibrary
 	bool bAnyoneHere;
 
 	//Generate Texture
-	UPROPERTY(BlueprintReadOnly, Category = "Kinect|Camera Image Texture")
-		FVector2D CameraImageTextureSize;
+	//UPROPERTY(BlueprintReadOnly, Category = "Kinect|Camera Image Texture")
+	//	FVector2D CameraImageTextureSize_IR;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Kinect|Camera Image Texture")
-		UTexture2D* CameraImageTexture;
+	//UPROPERTY(BlueprintReadOnly, Category = "Kinect|Camera Image Texture")
+	//	UTexture2D* CameraImageTexture_IR;
 
-	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Update Camera Image Texture", Keywords = "Update Camera Image Texture"), Category = "Kinect|Camera Image Texture")
-		void UpdateCameraImageTexture();
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Update Camera Texture", Keywords = "Update Camera Texture"), Category = "Kinect|Camera")
+		void UpdateCameraTexture();
 
-	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Get Camera Image With Texture", Keywords = "Get Camera Image With Texture"), Category = "Kinect|Camera Image Texture")
-		UTexture2D* GetCameraImageTexture();
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Get Camera IR Texture", Keywords = "Get Camera IR Texture"), Category = "Kinect|Camera")
+		UTexture2D* GetCameraImageTexture_IR();
+
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Get Camera Color Texture", Keywords = "Get Camera Color Texture"), Category = "Kinect|Camera")
+		UTexture2D* GetCameraImageTexture_Color();
+
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Get Camera Depth Texture", Keywords = "Get Camera Depth Texture"), Category = "Kinect|Camera")
+		UTexture2D* GetCameraImageTexture_Depth();
 
 
 private:
@@ -107,11 +113,37 @@ private:
 
 	//Generate Texture
 	//DynamnicTexture
-	TArray<FColor> CameraImageData;
-	FUpdateTextureRegion2D * CameraImageUpdateTextureRegion;
+	// IR
+	FVector2D CameraImageTextureSize_IR;
+	UTexture2D* CameraImageTexture_IR;
+	TArray<FColor> CameraImageData_IR;
+	FUpdateTextureRegion2D * CameraImageUpdateTextureRegion_IR;
+	// Color
+	FVector2D CameraImageTextureSize_Color;
+	UTexture2D* CameraImageTexture_Color;
+	TArray<FColor> CameraImageData_Color;
+	FUpdateTextureRegion2D * CameraImageUpdateTextureRegion_Color;
+	// Depth
+	FVector2D CameraImageTextureSize_Depth;
+	UTexture2D* CameraImageTexture_Depth;
+	TArray<FColor> CameraImageData_Depth;
+	FUpdateTextureRegion2D * CameraImageUpdateTextureRegion_Depth;
+
+	void UpdateCameraTexture(FVector2D &CameraImageTextureSize,
+		UTexture2D* CameraImageTexture, 
+		TArray<FColor> &CameraImageData,
+		FUpdateTextureRegion2D* CameraImageUpdateTextureRegion);
+
+
 	bool DidDynamicTextureInit;
 
 	void InitDynamicTextureResorces();
+
+	void InitDynamicTextureResorces(FVector2D &ImgTextureSize, 
+		UTexture2D* CameraImageTexture,
+		TArray<FColor> &CameraImageData,
+		FUpdateTextureRegion2D* CameraImageUpdateTextureRegion);
+
 	void UpdateTextureRegions(
 		UTexture2D* Texture,
 		int32 MipIndex,
